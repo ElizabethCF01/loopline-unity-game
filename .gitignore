@@ -107,3 +107,18 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# macOS
+.DS_Store
+
+# Xcode generated files
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# JetBrains IDE
+.idea/
+
+# Vim swap files
+*.swp
+*.swo
