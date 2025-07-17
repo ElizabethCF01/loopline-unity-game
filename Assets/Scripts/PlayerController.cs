@@ -48,7 +48,13 @@ public class PlayerController : MonoBehaviour
         if (Physics.Raycast(ray, out var hit, 100f, _groundMask))
         {
             UpdateSelectedObject(hit.collider.gameObject);
-            _playerAgent.SetDestination(hit.transform.position);
+            var bounds = hit.collider.bounds;
+            Vector3 targetPos = new(
+                bounds.center.x,
+                bounds.max.y,
+                bounds.center.z
+            );
+            _playerAgent.SetDestination(targetPos);
         }
     }
 
