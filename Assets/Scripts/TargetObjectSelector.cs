@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
 public class TargetObjectSelector : MonoBehaviour
 {
     [SerializeField]
     private Camera _camera;
+
+    [SerializeField]
+    private NavMeshAgent _playerAgent;
 
     [SerializeField]
     private Material _targetMaterial;
@@ -25,6 +29,7 @@ public class TargetObjectSelector : MonoBehaviour
             {
                 var newTarget = hit.collider.gameObject;
                 UpdateSelectedObject(newTarget);
+                _playerAgent.SetDestination(newTarget.transform.position);
             }
         }
     }

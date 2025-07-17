@@ -19,10 +19,30 @@ public class CameraOrbit : MonoBehaviour
     [Tooltip("Smoothing factor for camera inertia (higher = snappier)")]
     public float inertia = 5f;
 
+    [Tooltip("Zoom speed")]
+    public float zoomSpeed = 1f;
+
+    [Tooltip("Min orthographic size")]
+    public float minOrthographicSize = 1f;
+
+    [Tooltip("Max orthographic size")]
+    public float maxOrthographicSize = 20f;
+
     private float yaw;
     private float pitch;
     private float targetYaw;
     private float targetPitch;
+
+    private Camera _cam;
+
+    void Awake()
+    {
+        _cam = GetComponent<Camera>();
+        if (_cam == null)
+            Debug.LogWarning($"{typeof(CameraOrbit)}: no Camera component found.");
+        else if (!_cam.orthographic)
+            Debug.LogWarning($"{typeof(CameraOrbit)}: Camera is not orthographic.");
+    }
 
     void Start()
     {
@@ -46,6 +66,19 @@ public class CameraOrbit : MonoBehaviour
             targetYaw   += delta.x * sensitivity.x;
             targetPitch -= delta.y * sensitivity.y;
             targetPitch  = Mathf.Clamp(targetPitch, minYAngle, maxYAngle);
+        }
+
+        // Orthographic zoom
+        if (_cam != null && _cam.orthographic && mouse != null)
+        {
+            float scroll = mouse.scroll.ReadValue().y;
+            if (!Mathf.Approximately(scroll, 0f))
+            {
+                _cam.orthographicSize =
+                  Mathf.Clamp(_cam.orthographicSize - scroll * zoomSpeed * Time.deltaTime,
+                              minOrthographicSize,
+                              maxOrthographicSize);
+            }
         }
 
         // Smoothly interpolate towards target angles
