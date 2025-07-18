@@ -6,97 +6,116 @@ using UnityEngine.Events;
 public class FloorButton : MonoBehaviour
 {
     [Header("Parts to Move")]
-    [Tooltip("The visible button top that moves down.")]
-    public Transform buttonTop;
+    [SerializeField] private Transform buttonTop;
 
     [Header("Press Settings")]
-    public float pressDepth = 0.2f;
-    public float pressSpeed = 2f;
-    public float pressDelay = 0.1f;
+    [SerializeField] private float pressDepth = 0.2f;
+    [SerializeField] private float pressSpeed = 2f;
+    [SerializeField] private float pressDelay = 0.1f;
+    [SerializeField] private bool onlyPressOnce = false;
 
     [Header("Player Sink")]
-    [Tooltip("Tag your player GameObject accordingly.")]
-    public string playerTag = "Player";
+    [SerializeField] private string playerTag = "Player";
+    [SerializeField] private bool sinkPlayer = true;
 
     [Header("Events")]
-    public UnityEvent onPress;
-    public UnityEvent onRelease;
+    [SerializeField] private UnityEvent onPress;
+    [SerializeField] private UnityEvent onRelease;
+    [SerializeField] private float pressEventDelay = 0f;
 
-    private Vector3 _startPos;
-    private Vector3 _pressedPos;
-    private bool _isPressed;
-    private NavMeshAgent _playerAgent;
+    private Vector3 startLocalPos;
+    private Vector3 pressedLocalPos;
+    private bool isPressed;
+    private bool hasPressed;
+    private NavMeshAgent playerAgent;
+    private Coroutine pressRoutine;
+    private Coroutine releaseRoutine;
 
-    void Start()
+    private void Awake()
     {
-        _startPos = buttonTop.localPosition;
-        _pressedPos = _startPos + Vector3.down * pressDepth;
+        if (buttonTop == null && transform.childCount > 0)
+            buttonTop = transform.GetChild(0);
     }
 
-    void OnTriggerEnter(Collider other)
+    private void Start()
     {
-        if (_isPressed) return;
+        startLocalPos = buttonTop.localPosition;
+        pressedLocalPos = startLocalPos + Vector3.down * pressDepth;
+    }
 
-        if (other.CompareTag(playerTag))
+    private void OnTriggerEnter(Collider other)
+    {
+        if (isPressed || (onlyPressOnce && hasPressed)) return;
+        if (!other.CompareTag(playerTag)) return;
+
+        if (sinkPlayer)
         {
-            _playerAgent = other.GetComponentInParent<NavMeshAgent>();
-            StartCoroutine(PressDown());
+            playerAgent = other.GetComponentInParent<NavMeshAgent>();
         }
+        
+        if (pressRoutine != null)
+            StopCoroutine(pressRoutine);
+        pressRoutine = StartCoroutine(PressDown());
     }
 
-    void OnTriggerExit(Collider other)
+    private void OnTriggerExit(Collider other)
     {
-        if (!_isPressed) return;
+        if (!isPressed) return;
+        if (!other.CompareTag(playerTag)) return;
 
-        if (other.CompareTag(playerTag))
-        {
-            StartCoroutine(ReleaseUp());
-        }
+        if (releaseRoutine != null)
+            StopCoroutine(releaseRoutine);
+        releaseRoutine = StartCoroutine(ReleaseUp());
     }
 
-    IEnumerator PressDown()
+    private IEnumerator PressDown()
     {
         yield return new WaitForSeconds(pressDelay);
-        onPress?.Invoke();
-        
-        float startOffset = _playerAgent.baseOffset;
-        float endOffset   = startOffset - pressDepth;
-        _isPressed = true;
-        float t = 0f;
+        yield return StartCoroutine(InvokeEventAfterDelay(onPress, pressEventDelay));
 
-        while (t < 1f)
+        isPressed = true;
+        hasPressed = true;
+        float elapsed = 0f;
+        float originalOffset = playerAgent != null ? playerAgent.baseOffset : 0f;
+        float targetOffset = originalOffset - pressDepth;
+
+        while (elapsed < 1f)
         {
-            t += Time.deltaTime * pressSpeed;
-            buttonTop.localPosition = Vector3.Lerp(_startPos, _pressedPos, t);
-
-            if (_playerAgent != null)
-            {
-                _playerAgent.baseOffset = Mathf.Lerp(startOffset, endOffset, t);
-            }
-
+            elapsed += Time.deltaTime * pressSpeed;
+            float t = Mathf.Clamp01(elapsed);
+            buttonTop.localPosition = Vector3.Lerp(startLocalPos, pressedLocalPos, t);
+            if (playerAgent != null)
+                playerAgent.baseOffset = Mathf.Lerp(originalOffset, targetOffset, t);
             yield return null;
         }
+        pressRoutine = null;
     }
 
-    IEnumerator ReleaseUp()
+    private IEnumerator ReleaseUp()
     {
         onRelease?.Invoke();
+        float elapsed = 0f;
+        float originalOffset = playerAgent != null ? playerAgent.baseOffset : 0f;
+        float targetOffset = originalOffset + pressDepth;
 
-        float startOffset = _playerAgent.baseOffset;
-        float endOffset   = startOffset + pressDepth;
-        float t = 0f;
-
-        while (t < 1f)
+        while (elapsed < 1f)
         {
-            t += Time.deltaTime * pressSpeed;
-            // buttonTop.localPosition = Vector3.Lerp(_pressedPos, _startPos, t);
-            if (_playerAgent != null)
-            {
-                _playerAgent.baseOffset = Mathf.Lerp(startOffset, endOffset, t);
-            }
+            elapsed += Time.deltaTime * pressSpeed;
+            float t = Mathf.Clamp01(elapsed);
+            if (!onlyPressOnce)
+                buttonTop.localPosition = Vector3.Lerp(pressedLocalPos, startLocalPos, t);
+            if (playerAgent != null)
+                playerAgent.baseOffset = Mathf.Lerp(originalOffset, targetOffset, t);
             yield return null;
         }
-        _isPressed = false;
-        _playerAgent = null;
+        isPressed = false;
+        playerAgent = null;
+        releaseRoutine = null;
+    }
+
+    private IEnumerator InvokeEventAfterDelay(UnityEvent unityEvent, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        unityEvent?.Invoke();
     }
 }
