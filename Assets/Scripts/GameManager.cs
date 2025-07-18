@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -51,5 +52,24 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("You win!");
         onWinGame?.Invoke();
+    }
+
+    public void LoadMenuScene()
+    {
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    public void LoadGameScene()
+    {
+        SceneManager.LoadScene("MainScene");
+    }
+
+    public void QuitGame()
+    {
+        Debug.Log("Quitting game...");
+        Application.Quit();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 }
