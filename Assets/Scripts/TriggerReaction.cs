@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -7,6 +8,7 @@ using UnityEngine.Events;
 public class TriggerReaction : MonoBehaviour
 {
     [Header("Reaction Settings")]
+    [SerializeField] private float _reactionDelay = 0f;
     [SerializeField] private UnityEvent _onEnter;
     [SerializeField] private UnityEvent _onExit;
 
@@ -34,6 +36,19 @@ public class TriggerReaction : MonoBehaviour
             return;
         }
 
+        if (_reactionDelay <= 0f)
+        {
+            _onEnter?.Invoke();
+        }
+        else
+        {
+            StartCoroutine(DelayedOnEnter(_reactionDelay));
+        }
+    }
+
+    IEnumerator DelayedOnEnter(float delay)
+    {
+        yield return new WaitForSeconds(delay);
         _onEnter?.Invoke();
     }
 
@@ -43,7 +58,7 @@ public class TriggerReaction : MonoBehaviour
         {
             return;
         }
-        
+
         _onExit?.Invoke();
     }
 }

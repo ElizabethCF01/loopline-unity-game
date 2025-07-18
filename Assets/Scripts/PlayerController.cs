@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
@@ -54,8 +56,25 @@ public class PlayerController : MonoBehaviour
                 bounds.max.y,
                 bounds.center.z
             );
+
+            NavMeshPath path = new NavMeshPath();
+            // if (_playerAgent.CalculatePath(targetPos, path))
+            // {
+            //     if (path.status == NavMeshPathStatus.PathComplete)
+            //     {
             _playerAgent.SetDestination(targetPos);
+            //     }
+            //     else
+            //     {
+            //         StartCoroutine(DrawInvalidTile(hit.collider.gameObject));
+            //     }
+            // }
         }
+    }
+
+    private IEnumerator DrawInvalidTile(GameObject gameObject)
+    {
+        yield return new WaitForSeconds(0.5f);
     }
 
     private void UpdateAnimator()
